@@ -1,7 +1,10 @@
-
 import streamlit as st
 import pandas as pd
+import io
+import requests
+import zipfile
 import numpy as np
+from matplotlib import cm
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from mplsoccer import Pitch
@@ -11,10 +14,12 @@ st.set_page_config(page_title="DataFutebol", page_icon="df.png")
 st.title("DataFutebol")
 st.subheader("Estatísticas do Campeonato Brasileiro | Siga a gente no X/Twitter - @DataFutebol")
 
-# FUNÇÃO PARA CARREGAR DADOS
+# ✅ CARREGAR DADOS DO ZIP
 @st.cache_data
 def carregar_dados():
-    df = pd.read_csv('BRA25.csv')
+    with zipfile.ZipFile("BRA25.zip", "r") as z:
+        with z.open("BRA25.csv") as f:
+            df = pd.read_csv(f)
 
     team_mapping = {
         1239: "Flamengo", 1234: "Palmeiras", 1221: "Bahia", 1219: "Internacional", 1230: "Cruzeiro",
@@ -22,12 +27,13 @@ def carregar_dados():
         1241: "Santos", 5438: "Red Bull Bragantino", 1235: "Atlético Mineiro", 2065: "Fortaleza",
         1231: "Sport", 1238: "Vitória", 1244: "Grêmio", 7334: "Ceará", 1220: "Juventude", 6332: "Mirassol",
     }
+
     df["teamName"] = df["teamId"].map(team_mapping)
     return df
 
 df = carregar_dados()
 
-# FUNÇÃO PARA CALCULAR PPDA E FIELD TILT
+# CALCULAR PPDA E FIELD TILT
 @st.cache_data
 def calcular_ppda_field_tilt(df):
     resultados = []
@@ -90,11 +96,12 @@ def calcular_ppda_field_tilt(df):
 df_ppda_field_tilt = calcular_ppda_field_tilt(df)
 
 # CRIAR COLORMAP "hot" TRANSPARENTE
-from matplotlib import cm
 hot = cm.get_cmap('hot', 256)
 newcolors = hot(np.linspace(0, 1, 256))
-newcolors[0, -1] = 0  # Transparente para valor 0
+newcolors[0, -1] = 0
 transparent_hot = ListedColormap(newcolors)
+
+# (DAQUI PRA FRENTE CONTINUA O RESTANTE NORMAL...)
 
 # LISTAS DE ESTATÍSTICAS
 estatisticas_basicas = [
@@ -238,3 +245,4 @@ ax.set_title(f"Mapa de {acoes_mapa} do {jogador} no Brasileirão", fontsize=18)
 
 st.pyplot(fig)
 
+"""
