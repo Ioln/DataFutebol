@@ -244,5 +244,3 @@ qtd = len(dados_mapa)
 ax.set_title(f"Mapa de {acoes_mapa} do {jogador} no Brasileirão", fontsize=18)
 
 st.pyplot(fig)
-
-"""
