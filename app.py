@@ -7,31 +7,52 @@ from mplsoccer import Pitch, VerticalPitch
 from highlight_text import ax_text
 import numpy as np
 from adjustText import adjust_text
+import streamlit as st
+import pandas as pd
+import gdown
 
-# CONFIGURAÇÃO DO SITE
-st.set_page_config(page_title="DataFutebol", page_icon="df.png")
-
-#st.title("⚽ Visualizações Avançadas - DataFutebol")
-st.subheader("👋 Seja bem-vindo ao aplicativo do DataFutebol")
-st.markdown("Nos siga nas Redes Sociais → **@DataFutebol** | Apoie o projeto! Chave Pix → **iolncant@gmail.com** | Agradeço ao @CruzeiroData pela ajuda!")
-# ✅ CARREGAR DADOS DO ZIP
+# ===========================
+# CARREGAR DADOS
+# ===========================
 @st.cache_data
 def carregar_dados():
-    with zipfile.ZipFile("BRA25.zip", "r") as z:
-        with z.open("BRA25.csv") as f:
-            df = pd.read_csv(f)
+    # ID do arquivo no Google Drive
+    file_id = "1vUEPl700wpJib2FKroNhLj77UwbVn89X"
+    url = f"https://drive.google.com/uc?id={file_id}"
 
-    team_mapping = {
-        1239: "Flamengo", 1234: "Palmeiras", 1221: "Bahia", 1219: "Internacional", 1230: "Cruzeiro",
-        1227: "Botafogo", 1232: "Fluminense", 1226: "Vasco", 1237: "Corinthians", 1224: "São Paulo",
-        1241: "Santos", 5438: "Red Bull Bragantino", 1235: "Atlético Mineiro", 2065: "Fortaleza",
-        1231: "Sport", 1238: "Vitória", 1244: "Grêmio", 7334: "Ceará", 1220: "Juventude", 6332: "Mirassol",
-    }
+    # Baixar o CSV localmente (só na 1ª vez, depois cacheia)
+    output = "BRA25.csv"
+    gdown.download(url, output, quiet=False)
 
-    df["teamName"] = df["teamId"].map(team_mapping)
-    return df
+    return pd.read_csv(output)
 
 df = carregar_dados()
+
+team_mapping = {
+    1239: "Flamengo",
+    1234: "Palmeiras",
+    1221: "Bahia",
+    1219: "Internacional",
+    1230: "Cruzeiro",
+    1227: "Botafogo",
+    1232: "Fluminense",
+    1226: "Vasco",
+    1237: "Corinthians",
+    1224: "São Paulo",
+    1241: "Santos",
+    5438: "Red Bull Bragantino",
+    1235: "Atlético Mineiro",
+    2065: "Fortaleza",
+    1231: "Sport",
+    1238: "Vitória",
+    1244: "Grêmio",
+    7334: "Ceará",
+    1220: "Juventude",
+    6332: "Mirassol",
+}
+
+# Substituir os IDs pelos nomes
+df["teamName"] = df["teamId"].map(team_mapping)
 
 data = df
 
@@ -73,6 +94,14 @@ plot_types = [
 # Fonte
 fnt = fm.FontProperties(fname='BigShoulders_18pt-Regular.ttf')
 menu_option = st.sidebar.radio("Navegação", ["Visualizações", "Rankings", "Gráficos"])
+
+
+#st.title("⚽ Visualizações Avançadas - DataFutebol")
+
+st.subheader("👋 Seja bem-vindo ao aplicativo do DataFutebol")
+st.markdown("Nos siga nas Redes Sociais → **@DataFutebol** | Apoie o projeto! Chave Pix → **iolncant@gmail.com** | Agradeço ao @CruzeiroData pela ajuda!")
+
+
 def add_logo(fig, team_name):
     try:
         logo = mpimg.imread(f"{team_name}.png")
