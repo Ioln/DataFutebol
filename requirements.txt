@@ -3,3 +3,6 @@ pandas
 numpy
 matplotlib
 mplsoccer
+adjustText
+gdown
+highlight-text
