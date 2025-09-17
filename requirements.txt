@@ -7,4 +7,4 @@ adjustText
 gdown
 highlight-text
 scipy
-plotly
+plotly.graph_objects
