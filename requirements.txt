@@ -5,6 +5,5 @@ mplsoccer
 highlight_text
 numpy
 adjustText
-gdown
 scipy
-plotly
+os
