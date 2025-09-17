@@ -7,3 +7,4 @@ adjustText
 gdown
 highlight-text
 scipy
+os
