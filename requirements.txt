@@ -7,4 +7,3 @@ adjustText
 gdown
 highlight-text
 scipy
-plotly
