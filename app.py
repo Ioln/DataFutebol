@@ -8,13 +8,10 @@ from mplsoccer import Pitch, VerticalPitch
 from highlight_text import ax_text
 import numpy as np
 from adjustText import adjust_text
-import streamlit as st
-import pandas as pd
-from scipy.stats import percentileofscore
-from scipy.stats import rankdata
+from scipy.stats import percentileofscore, rankdata
 
 # ===========================
-# CARREGAR DADOS
+# CARREGAR DADOS (lazy load)
 # ===========================
 @st.cache_data
 def carregar_dados():
@@ -24,6 +21,23 @@ def carregar_dados():
     else:
         st.error("Arquivo BRA25.parquet não encontrado no repositório!")
         return pd.DataFrame()  # retorna vazio se não achar
+
+
+# ===========================
+# APP
+# ===========================
+st.sidebar.title("Menu")
+menu_option = st.sidebar.radio("Navegação", ["Visualizações", "Rankings", "Comparação", "Contato"])
+
+st.subheader("👋 Seja bem-vindo ao aplicativo do DataFutebol")
+st.markdown("Nos siga nas Redes Sociais → **@DataFutebol** | Apoie o projeto! Chave Pix-> iolncant@gmail.com")
+
+# 🔑 Só carrega os dados quando precisar
+if menu_option in ["Visualizações", "Rankings", "Comparação"]:
+    df = carregar_dados()
+
+    if df.empty:
+        st.stop()  # encerra se não achou os dados
 
 df = carregar_dados()
 
