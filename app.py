@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,19 +11,22 @@ from adjustText import adjust_text
 import streamlit as st
 import pandas as pd
 import gdown
+from scipy.stats import percentileofscore
+import plotly.graph_objects as go
+from scipy.stats import rankdata
 
 # ===========================
 # CARREGAR DADOS
 # ===========================
 @st.cache_data
 def carregar_dados():
-    # ID do arquivo no Google Drive
     file_id = "1hf16eKgd7ZvqVO0fIeLoGOPXG3F4nRtg"
     url = f"https://drive.google.com/uc?id={file_id}"
-
-    # Baixar o CSV localmente (só na 1ª vez, depois cacheia)
     output = "BRA25.csv"
-    gdown.download(url, output, quiet=False)
+
+    # Só baixa se não existir
+    if not os.path.exists(output):
+        gdown.download(url, output, quiet=False)
 
     return pd.read_csv(output)
 
@@ -533,6 +537,143 @@ def show_rankings(df):
     st.subheader("🛡️ Defesa")
     st.dataframe(stats[["playerName", "teamName", "Jogos",
                         "Desarmes", "Bolas Recuperadas", "Rebatidas", "Interceptações", "Faltas"]])
+
+def show_comparacao(df):
+    st.title("📈 Comparação de Jogadores")
+
+    # ----------------------------
+    # 1. Pré-processamento e agregação (mantido)
+    # ----------------------------
+    agg_funcs = {
+        "passAccurate": "sum", "passInaccurate": "sum", "box_entry": "sum",
+        "progressive_action": "sum", "last_third_entry": "sum", "isGoal": "sum",
+        "assist": "sum", "passKey": "sum", "passCornerAccurate": "sum",
+        "passCornerInaccurate": "sum", "shotsTotal": "sum", "shotOnTarget": "sum",
+        "shotOffTarget": "sum", "shotOnPost": "sum", "dribbleWon": "sum",
+        "dribbleLost": "sum", "tackleWon": "sum", "tackleLost": "sum",
+        "ballRecovery": "sum", "clearanceTotal": "sum", "interceptionAll": "sum",
+        "foulCommitted": "sum",
+    }
+    
+    stats = df.groupby(["playerName", "teamName"]).agg(agg_funcs).reset_index()
+    games_played = df.groupby(["playerName", "teamName"])["matchId"].nunique().reset_index()
+    games_played.columns = ["playerName", "teamName", "Jogos"]
+    stats = stats.merge(games_played, on=["playerName", "teamName"], how="left")
+    
+    # Calcular médias por jogo
+    cols_to_avg = [col for col in agg_funcs.keys()]
+    stats_per_game = stats.set_index(["playerName", "teamName"])[cols_to_avg].div(stats["Jogos"].values, axis=0).reset_index()
+
+    # Calcular as estatísticas específicas com base nas médias
+    stats_per_game["Passes Totais"] = stats_per_game["passAccurate"] + stats_per_game["passInaccurate"]
+    stats_per_game["Aproveitamento nos Passes"] = np.where(stats_per_game["Passes Totais"] > 0, (stats_per_game["passAccurate"] / stats_per_game["Passes Totais"] * 100).round(1), 0)
+    stats_per_game["Passes para a Área"] = stats_per_game["box_entry"]
+    stats_per_game["Passes Progressivos"] = stats_per_game["progressive_action"]
+    stats_per_game["Passes para o Terço Final"] = stats_per_game["last_third_entry"]
+    stats_per_game["Gols"] = stats_per_game["isGoal"]
+    stats_per_game["Assistências"] = stats_per_game["assist"]
+    stats_per_game["Chances Criadas"] = stats_per_game["passKey"]
+    stats_per_game["Taxa de Conversão"] = np.where(stats_per_game["shotsTotal"] > 0, (stats_per_game["isGoal"] / stats_per_game["shotsTotal"] * 100).round(1), 0)
+    stats_per_game["Aproveitamento nos Dribles"] = np.where((stats_per_game["dribbleWon"] + stats_per_game["dribbleLost"]) > 0, (stats_per_game["dribbleWon"] / (stats_per_game["dribbleWon"] + stats_per_game["dribbleLost"]) * 100).round(1), 0)
+    stats_per_game["Desarmes"] = stats_per_game["tackleWon"]
+    stats_per_game["Interceptações"] = stats_per_game["interceptionAll"]
+    stats_per_game["Rebatidas"] = stats_per_game["clearanceTotal"]
+    stats_per_game["Bolas Recuperadas"] = stats_per_game["ballRecovery"]
+
+    # Estatísticas disponíveis para seleção
+    available_stats = [
+        "Passes Totais", "Aproveitamento nos Passes", "Passes para a Área",
+        "Passes Progressivos", "Passes para o Terço Final", "Gols",
+        "Assistências", "Chances Criadas", "Taxa de Conversão",
+        "Aproveitamento nos Dribles", "Desarmes", "Interceptações",
+        "Rebatidas", "Bolas Recuperadas"
+    ]
+    
+    # ----------------------------
+    # 2. Widgets para seleção de jogadores e estatísticas
+    # ----------------------------
+    times_all = sorted(stats["teamName"].dropna().unique())
+    
+    st.markdown("### Seleção de Jogadores")
+    st.markdown("Selecione um time, e em seguida um jogador. Você pode selecionar até 4 jogadores.")
+    
+    cols = st.columns(4)
+    jogadores_selecionados = []
+    
+    for i, col in enumerate(cols):
+        with col:
+            time = st.selectbox(f"Time {i+1}", ['Nenhum'] + times_all, key=f"time_{i}")
+            jogador = 'Nenhum'
+            if time != 'Nenhum':
+                jogadores_do_time = sorted(stats[stats["teamName"] == time]["playerName"].dropna().unique())
+                jogador = st.selectbox(f"Jogador {i+1}", ['Nenhum'] + jogadores_do_time, key=f"jogador_{i}")
+            
+            if jogador != 'Nenhum':
+                jogadores_selecionados.append(jogador)
+    
+    selected_stats = st.multiselect("Escolha de 4 a 10 estatísticas:", available_stats)
+
+    if not (4 <= len(selected_stats) <= 10):
+        st.info("Escolha **entre 4 e 10 estatísticas** para montar o radar.")
+        return
+    
+    if len(jogadores_selecionados) < 2:
+        st.info("Selecione pelo menos **2 jogadores** para comparar.")
+        return
+    
+    # -----------------------------------------------------------------
+    # 3. Preparar os dados para o gráfico de radar (com percentil global)
+    # -----------------------------------------------------------------
+    df_plot = stats_per_game[stats_per_game["playerName"].isin(jogadores_selecionados)].copy()
+    
+    for stat in selected_stats:
+        # Calcula o percentil de cada jogador em relação a TODOS os jogadores na base de dados
+        all_stats = stats_per_game[stat].dropna().values
+        # Usando rankdata para percentil
+        df_plot[stat] = [rankdata(all_stats, method='average')[np.argwhere(all_stats == x)[0][0]] / len(all_stats) for x in df_plot[stat]]
+
+    df_plot_long = df_plot.melt(id_vars="playerName", value_vars=selected_stats, var_name="Estatística", value_name="Percentil")
+
+    # ----------------------------
+    # 4. Montar o gráfico com Plotly Express
+    # ----------------------------
+    fig = go.Figure()
+    
+    # Padronização de cores
+    colors = ["#28a745", "#007bff", "#6f42c4", "#fd7e14"] 
+    # verde, azul, roxo, laranja (bootstrap palette)
+    
+    for i, jogador in enumerate(jogadores_selecionados):
+        jogador_data = df_plot_long[df_plot_long["playerName"] == jogador]
+        fig.add_trace(go.Scatterpolar(
+            r=jogador_data["Percentil"],
+            theta=jogador_data["Estatística"],
+            fill='toself',
+            name=jogador,
+            line_color=colors[i % len(colors)] 
+            # Garantir que a cor se repita caso mais de 4 jogadores sejam selecionados (embora o limite seja 4)
+        ))
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1],
+                tickvals=[0, 0.25, 0.50, 0.75, 1.0],
+                ticktext=['0%', '25%', '50%', '75%', '100%']
+            )
+        ),
+        showlegend=True,
+        title_text='', 
+        legend=dict(
+            yanchor="top",
+            y=1.1,
+            xanchor="left",
+            x=1.1
+        )
+    )
+    
+    st.plotly_chart(fig)
 def show_contato():
     st.title("📬 Contato")
 
@@ -602,5 +743,7 @@ if menu_option == "Visualizações":
 
 elif menu_option == "Rankings":
     show_rankings(df_filtered)
+elif menu_option == "Comparação":
+    show_comparacao(df_filtered)
 elif menu_option == "Contato":
     show_contato()
