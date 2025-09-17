@@ -374,7 +374,7 @@ def plot_heatmap(data, selected):
     fig, ax = pitch.draw(figsize=(16, 11))
     fig.set_facecolor("#f7f7f7")
     act = data[data['isTouch'] == True]
-    pitch.kdeplot(act.x, act.y, ax=ax, shade=True, cmap="Reds", bw_adjust=1,
+    pitch.kdeplot(act.x, act.y, ax=ax, fill=True, cmap="Reds", bw_adjust=1,
                   levels=100, fill=True, alpha = 0.7)
 
     ax.set_title(f"Heatmap - {selected}", fontproperties=fnt, fontsize=30)
