@@ -1,11 +1,10 @@
 streamlit
 pandas
-numpy
 matplotlib
 mplsoccer
+highlight_text
+numpy
 adjustText
 gdown
-highlight-text
 scipy
 plotly
-os
