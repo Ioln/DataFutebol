@@ -27,8 +27,11 @@ def carregar_dados():
 # APP
 # ===========================
 st.sidebar.title("Menu")
-menu_option = st.sidebar.radio("Navegação", ["Visualizações", "Rankings", "Comparação", "Contato"])
-
+menu_option = st.sidebar.radio(
+    "Navegação",
+    ["Visualizações", "Rankings", "Comparação", "Contato"],
+    key="menu_option"
+)
 st.subheader("👋 Seja bem-vindo ao aplicativo do DataFutebol")
 st.markdown("Nos siga nas Redes Sociais → **@DataFutebol** | Apoie o projeto! Chave Pix-> iolncant@gmail.com")
 
@@ -38,9 +41,6 @@ if menu_option in ["Visualizações", "Rankings", "Comparação"]:
 
     if df.empty:
         st.stop()  # encerra se não achou os dados
-
-df = carregar_dados()
-
 team_mapping = {
     1239: "Flamengo",
     1234: "Palmeiras",
