@@ -106,13 +106,6 @@ plot_types = [
 
 # Fonte
 fnt = fm.FontProperties(fname='BigShoulders_18pt-Regular.ttf')
-menu_option = st.sidebar.radio("Navegação", ["Visualizações", "Rankings", "Comparação", "Contato"])
-
-#st.title("⚽ Visualizações Avançadas - DataFutebol")
-
-st.subheader("👋 Seja bem-vindo ao aplicativo do DataFutebol")
-st.markdown("Nos siga nas Redes Sociais → **@DataFutebol** | Apoie o projeto! Chave Pix → **b034e142-4211-4107-9dd0-baa364d8e381** | Agradeço ao @CruzeiroData pela ajuda!")
-
 
 def add_logo(fig, team_name):
     try:
