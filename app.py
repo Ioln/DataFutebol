@@ -20,15 +20,12 @@ from scipy.stats import rankdata
 # ===========================
 @st.cache_data
 def carregar_dados():
-    file_id = "1hf16eKgd7ZvqVO0fIeLoGOPXG3F4nRtg"
-    url = f"https://drive.google.com/uc?id={file_id}"
-    output = "BRA25.csv"
-
-    # Só baixa se não existir
-    if not os.path.exists(output):
-        gdown.download(url, output, quiet=False)
-
-    return pd.read_csv(output)
+    arquivo = "BRA25.parquet"
+    if os.path.exists(arquivo):
+        return pd.read_parquet(arquivo)
+    else:
+        st.error("Arquivo BRA25.parquet não encontrado no repositório!")
+        return pd.DataFrame()  # retorna vazio se não achar
 
 df = carregar_dados()
 
