@@ -10,7 +10,6 @@ import numpy as np
 from adjustText import adjust_text
 import streamlit as st
 import pandas as pd
-import gdown
 from scipy.stats import percentileofscore
 import plotly.graph_objects as go
 from scipy.stats import rankdata
