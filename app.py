@@ -6,7 +6,6 @@ import matplotlib.image as mpimg
 from mplsoccer import Pitch, VerticalPitch
 from highlight_text import ax_text
 import numpy as np
-
 from adjustText import adjust_text
 import streamlit as st
 import pandas as pd
